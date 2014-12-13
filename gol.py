@@ -59,11 +59,9 @@ class Environment(object):
         self.environment = makeMatrix(NUM_CELLS, NUM_CELLS, empty)
 
     def kill(self, x, y):
-        self.live_cells.remove((x,y))
         self.environment[x][y] = DEAD
 
     def vitalize(self, x, y):
-        self.live_cells.append((x,y))
         self.environment[x][y] = ALIVE
 
     def iterateField(self, field):
@@ -146,9 +144,6 @@ def drawCell(x,y,size,color):
 
 def setupGraphics():
     pygame.init()
-    global font
-    global surface
-    font = pygame.font.Font(None, 28)
     os.environ['SDL_VIDEO_WINDOW_POS'] = '%i,%i' % (100, 100)
     video_flags = OPENGL | DOUBLEBUF # | NOFRAME  | FULLSCREEN
     surface = pygame.display.set_mode(RESOLUTION, video_flags)
