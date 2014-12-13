@@ -1,12 +1,13 @@
-
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import os
 import pygame
 import random
+import pygame.locals as pygame_locals
 from pygame.locals import *
-
 from collections import namedtuple
+
+from userinput import Events
 
 NUM_CELLS = 100
 Resolution = namedtuple('Resolution', ['x','y'])
@@ -15,13 +16,6 @@ limit = min(RESOLUTION)
 pixel_per_cell = limit / NUM_CELLS
 OFFSET_X = (RESOLUTION.x - (NUM_CELLS * pixel_per_cell)) / 2
 OFFSET_Y = (RESOLUTION.y - (NUM_CELLS * pixel_per_cell)) / 2
-
-# 1920, 1080 # wide a 
-# 1920, 1200 # wide b
-# 1440, 900 # wide
-# 1280, 800 # rect
-# 1024, 768 # rect
-
 
 def makeMatrix(width, height, fn):
     matrix = []
@@ -64,18 +58,13 @@ class Environment(object):
     def vitalize(self, x, y):
         self.environment[x][y] = ALIVE
 
-    def iterateField(self, field):
-        width = len(field[0])
-        height = len(field)
-        return self.iterate(width, height, field)
-
     def iterate(self, width, height, field):
         for x in range(width):
             for y in range(height): 
                 yield (x,y,field[x][y])
 
     def cells(self):
-        return self.iterateField(self.environment)
+        return self.iterate(NUM_CELLS, NUM_CELLS, self.environment)
 
     def getNeighborCount(self, x,y):
         count = 0
@@ -106,141 +95,153 @@ class Environment(object):
 
     def calculateNextGeneration(self):
         neighborhood = makeMatrix(NUM_CELLS, NUM_CELLS, self.getNeighborCount)
-        for x,y,neighbors in self.iterateField(neighborhood):
+        for x,y,neighbors in self.iterate(NUM_CELLS, NUM_CELLS, neighborhood):
             self.decide(x, y, neighbors)
 
-def draw_grid():
-    glColor4f(*Color.anthracite)
-    boundary_x = NUM_CELLS * pixel_per_cell + OFFSET_X
-    boundary_y = NUM_CELLS * pixel_per_cell + OFFSET_Y
-    glRectf(OFFSET_X, 0, boundary_x, boundary_y)
-    glLineWidth(1)
-    glColor4f(*Color.black)
-    glBegin(GL_LINES);
-    for i in xrange(pixel_per_cell, NUM_CELLS * pixel_per_cell, pixel_per_cell):
-        glVertex2f(i + OFFSET_X, OFFSET_Y)
-        glVertex2f(i + OFFSET_X, boundary_y)
-        glVertex2f(OFFSET_X,   i + OFFSET_Y)
-        glVertex2f(boundary_x, i + OFFSET_Y)
-    glEnd()
+class Engine(object):
+    def __init__(self):
+        self.__setup()
 
-def draw_cells(environment):
-    for x,y,v in environment.cells():
-        if environment.isAlive(x,y):
-            drawCell(x,y, pixel_per_cell, Color.green)
+    def __setup(self):
+        pygame.init()
+        os.environ['SDL_VIDEO_WINDOW_POS'] = '%i,%i' % (100, 100)
+        
+        video_flags = OPENGL | DOUBLEBUF  # | NOFRAME  | FULLSCREEN
 
-def draw(environment):
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    glLoadIdentity()
-    glTranslate(0.0, 0.0, 3.0)
-    draw_grid()
-    draw_cells(environment)
-      
-def drawCell(x,y,size,color):
-    x = x * size + OFFSET_X
-    y = y * size + OFFSET_Y
-    glColor4f(*color)
-    glRectf(x,y, (size - 1) + x, (size - 1) + y)
+        pygame.display.set_mode(RESOLUTION, video_flags)
+        glClearColor(*Color.black)
+        self.__resize(*RESOLUTION)
 
-def setupGraphics():
-    pygame.init()
-    os.environ['SDL_VIDEO_WINDOW_POS'] = '%i,%i' % (100, 100)
-    video_flags = OPENGL | DOUBLEBUF # | NOFRAME  | FULLSCREEN
-    surface = pygame.display.set_mode(RESOLUTION, video_flags)
-    glClearColor(*Color.black)
-    resize(RESOLUTION)
+    def __resize(self, width, height):
+        glViewport(0,0, width, height)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glOrtho(0.0, width, height, 0, -20, 0.0)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()        
 
-def resize((width, height)):
-    glViewport(0,0, width,height)
-    glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
-    glOrtho(0.0, width, height, 0, -20, 0.0)
-    glMatrixMode(GL_MODELVIEW)
-    glLoadIdentity()
-    
-def isexit(event):
-    return event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE)
+    def clear_screen(self):
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glLoadIdentity()
+        glTranslate(0.0, 0.0, 3.0)
 
-def ispaused(event):
-    return event.type == KEYDOWN and event.key == K_p
+    def draw_cell(self, x, y, size, color):
+        x = x * size + OFFSET_X
+        y = y * size + OFFSET_Y
+        glColor4f(*color)
+        glRectf(x,y, (size - 1) + x, (size - 1) + y)
 
-
-def in_range(x,y):
-    return 0 <= x < NUM_CELLS and 0 <= y < NUM_CELLS
-
-def markedCell():
-    x,y = pygame.mouse.get_pos()
-    x -= OFFSET_X
-    y -= OFFSET_Y
-    x = int(x / pixel_per_cell)
-    y = int(y / pixel_per_cell)
-    return x,y
-
-def snap_to_grid(x, y):
-    x = int(x / pixel_per_cell)
-    y = int(y / pixel_per_cell)
-    return x,y
-
-def draw_cursor():
-    glColor4f(*Color.white)
-    x,y = pygame.mouse.get_pos()
-    x,y = snap_to_grid(x, y)
-    glColor4f(*Color.red)
-    x = (x * pixel_per_cell)
-    y = (y * pixel_per_cell)
-    glRectf(x, y, x + pixel_per_cell, y+pixel_per_cell)
-
-def handleEvents(event, environment):
-    if event.type == MOUSEBUTTONDOWN:
-        lmb,mmb,rmb = pygame.mouse.get_pressed()
-        cell = markedCell()
-        if not in_range(*cell):
-            return
-        if lmb:
-            environment.vitalize(*cell)
-        if rmb:
-            environment.kill(*cell)
-    if event.type == KEYDOWN and event.key == K_F5:
-        environment.randomize()
-    if event.type == KEYDOWN and event.key == K_c:
-        environment.clear()
-
-caption = 'Game of Life - Generation %s'
-
-def updateTitle(generations):
-    pygame.display.set_caption(caption % generations)
-
-def gameLoop(environment):
-    paused = True
-
-    generations = 0
-    while True:
-        updateTitle(generations)
-        event = pygame.event.poll() 
-        if isexit(event):
-            break       
-
-        if ispaused(event):
-            paused = (not paused)
-
-        handleEvents(event,environment)
-        draw(environment)
-        draw_cursor()
-
-        if not paused:
-            environment.calculateNextGeneration()
-            generations += 1
+    def frame(self):
         pygame.display.flip()
 
-def main():
-    environment = Environment()
-    setupGraphics()
+class Grid(object):
+    def __init__(self, engine, environment):
+        self._environment = environment
+        self._engine = engine
 
-    frames = 0
-    ticks = pygame.time.get_ticks()
-    gameLoop(environment)
+    def draw(self):
+        self._engine.clear_screen()
+        self.__draw_grid()
+        self.__draw_cells()
+        self.__draw_cursor()
+
+    def __draw_grid(self):
+        glColor4f(*Color.anthracite)
+        boundary_x = NUM_CELLS * pixel_per_cell + OFFSET_X
+        boundary_y = NUM_CELLS * pixel_per_cell + OFFSET_Y
+        glRectf(OFFSET_X, OFFSET_Y, boundary_x, boundary_y)
+        glLineWidth(1)
+        glColor4f(*Color.black)
+        glBegin(GL_LINES);
+        for i in xrange(pixel_per_cell, NUM_CELLS * pixel_per_cell, pixel_per_cell):
+            glVertex2f(i + OFFSET_X, OFFSET_Y)
+            glVertex2f(i + OFFSET_X, boundary_y)
+            glVertex2f(OFFSET_X,   i + OFFSET_Y)
+            glVertex2f(boundary_x, i + OFFSET_Y)
+        glEnd()
+
+    def __draw_cells(self):
+        for x,y,v in self._environment.cells():
+            if self._environment.isAlive(x,y):
+                self._engine.draw_cell(x,y, pixel_per_cell, Color.green)
+          
+    def __draw_cursor(self):
+        position = pygame.mouse.get_pos()
+        x,y = self.__pixel_to_grid(position)
+        self._engine.draw_cell(x, y, pixel_per_cell, Color.red)
+        
+    def __pixel_to_grid(self, (x, y)):
+        x,y = self.__snap_to_grid(x - OFFSET_X, y - OFFSET_Y)
+        return x,y
+
+    def __snap_to_grid(self, x, y):
+        x = int(x / pixel_per_cell)
+        y = int(y / pixel_per_cell)
+        return x,y
+
+    def __is_on_grid(self, x, y):
+        return 0 <= x < NUM_CELLS and 0 <= y < NUM_CELLS
+
+    def vitalize_cell(self, position):
+        x,y = self.__pixel_to_grid(position)
+        if not self.__is_on_grid(x,y): return
+        self._environment.vitalize(x,y)
+
+    def kill_cell(self, position):
+        x,y = self.__pixel_to_grid(position)
+        if not self.__is_on_grid(x,y): return
+        self._environment.kill(x,y)
+
+class Game(object):
+    def __init__(self, engine, grid, environment, events=Events()):
+        self._engine = engine
+        self._events = events
+        self._grid = grid
+        self._environment = environment
+
+        self._running = True
+        self._paused = True
+        self.__register_events()
+
+    def __register_events(self):
+        self._events.on_quit(self.quit)
+
+        keyboard = self._events._keyboard
+        keyboard.on_key(K_ESCAPE, self.quit)
+        keyboard.on_key(K_q, self.quit)
+        keyboard.on_key(K_p, self.pause)
+        keyboard.on_key(K_F5, self._environment.randomize)
+        keyboard.on_key(K_c, self._environment.clear)
+
+        mouse = self._events._mouse
+        mouse.on_click(self._grid.vitalize_cell)
+        mouse.on_right_click(self._grid.kill_cell)
+
+    def run(self):
+        ## Put this here for game syncing stuff 
+        # frames = 0
+        # ticks = pygame.time.get_ticks()
+        while self._running:
+            self._events.handle()
+            self._grid.draw()
+            if not self._paused:
+                self.round()
+            self._engine.frame()
+
+    def round(self):
+        self._environment.calculateNextGeneration()
+
+    def pause(self):
+        self._paused = (not self._paused)
+        
+    def quit(self):
+        self._running = False
+
+def main():
+    engine = Engine()
+    environment = Environment()
+    grid = Grid(engine, environment)
+    Game(engine, grid, environment).run()
 
 if __name__ == '__main__': 
     main()
-
-
