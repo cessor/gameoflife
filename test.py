@@ -15,9 +15,10 @@ from collections import namedtuple
 NUM_CELLS = 100
 Resolution = namedtuple('Resolution', ['x','y'])
 RESOLUTION = Resolution(1280, 800)
-
 limit = min(RESOLUTION)
 pixel_per_cell = limit / NUM_CELLS
+OFFSET_X = (RESOLUTION.x - (NUM_CELLS * pixel_per_cell)) / 2
+OFFSET_Y = (RESOLUTION.y - (NUM_CELLS * pixel_per_cell)) / 2
 
 # 1920, 1080 # wide a 
 # 1920, 1200 # wide b
@@ -122,25 +123,18 @@ class Environment(object):
             self.decide(x, y, neighbors)
 
 def draw_grid():
-    offset_x = (RESOLUTION.x - (NUM_CELLS * pixel_per_cell)) / 2
-    offset_y = (RESOLUTION.y - (NUM_CELLS * pixel_per_cell)) / 2
     glColor4f(*Color.anthracite)
-    boundary_x = NUM_CELLS * pixel_per_cell + offset_x
-    boundary_y = NUM_CELLS * pixel_per_cell + offset_y
-    glRectf(offset_x, 0, boundary_x, boundary_y)
+    boundary_x = NUM_CELLS * pixel_per_cell + OFFSET_X
+    boundary_y = NUM_CELLS * pixel_per_cell + OFFSET_Y
+    glRectf(OFFSET_X, 0, boundary_x, boundary_y)
     glLineWidth(1)
-    glColor4f(*Color.white)
+    glColor4f(*Color.black)
     glBegin(GL_LINES);
-    for i in xrange(0, int(NUM_CELLS), pixel_per_cell):
-        
-
-        print i
-        glVertex2f(i + offset_x, 0)
-        glVertex2f(i + offset_x, boundary_y)
-
-
-        # glVertex2f(offset_x,   i + offset_y)
-        # glVertex2f(boundary_x, i + offset_y)
+    for i in xrange(pixel_per_cell, NUM_CELLS * pixel_per_cell, pixel_per_cell):
+        glVertex2f(i + OFFSET_X, OFFSET_Y)
+        glVertex2f(i + OFFSET_X, boundary_y)
+        glVertex2f(OFFSET_X,   i + OFFSET_Y)
+        glVertex2f(boundary_x, i + OFFSET_Y)
     glEnd()
 
 def draw_cells(environment):
@@ -152,13 +146,12 @@ def draw(environment):
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
     glTranslate(0.0, 0.0, 3.0)
-
     draw_grid()
     draw_cells(environment)
       
 def drawCell(x,y,size,color):
-    x = x * size
-    y = y * size
+    x = x * size + OFFSET_X
+    y = y * size + OFFSET_Y
     glColor4f(*color)
     glRectf(x,y, (size - 1) + x, (size - 1) + y)
 
@@ -187,10 +180,17 @@ def isexit(event):
 def ispaused(event):
     return event.type == KEYDOWN and event.key == K_p
 
+
+def in_range(x,y):
+    return 0 <= x < NUM_CELLS and 0 <= y < NUM_CELLS
+
 def markedCell():
     x,y = pygame.mouse.get_pos()
-    cell = int(x / pixel_per_cell), int(y / pixel_per_cell)
-    return cell
+    x -= OFFSET_X
+    y -= OFFSET_Y
+    x = int(x / pixel_per_cell)
+    y = int(y / pixel_per_cell)
+    return x,y
 
 def snap_to_grid(x, y):
     x = int(x / pixel_per_cell)
@@ -209,10 +209,13 @@ def draw_cursor():
 def handleEvents(event, environment):
     if event.type == MOUSEBUTTONDOWN:
         lmb,mmb,rmb = pygame.mouse.get_pressed()
+        cell = markedCell()
+        if not in_range(*cell):
+            return
         if lmb:
-            environment.vitalize(*markedCell())
+            environment.vitalize(*cell)
         if rmb:
-            environment.kill(*markedCell())
+            environment.kill(*cell)
     if event.type == KEYDOWN and event.key == K_F5:
         environment.randomize()
     if event.type == KEYDOWN and event.key == K_c:
