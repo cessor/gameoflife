@@ -6,10 +6,6 @@ import pygame
 import random
 from pygame.locals import *
 
-# creatureSize = 10
-# width,height = environmentWidth,environmentHeight = 100,100
-# screenSize = width * creatureSize, height * creatureSize
-
 from collections import namedtuple
 
 NUM_CELLS = 100
@@ -42,27 +38,18 @@ class Color(object):
     black = (0.0, 0.0, 0.0, 1.0)
     white = (1.0, 1.0, 1.0, 1.0)
 
-dead = 0
-alive = 1
+DEAD = 0
+ALIVE = 1
 
 def empty(x,y):
-    return dead
+    return DEAD
 
 def randomCell(x,y):
-    return random.randint(dead, alive)
-
-
-class Cell(object):
-    def __init__(self,x,y,value):
-        self.x = x
-        self.y = y
-        self.value = value
-
-    def isAlive(self):
-        return self.value == alive
+    return random.randint(DEAD, ALIVE)
 
 class Environment(object):
     def __init__(self):
+        self.live_cells = []
         self.clear()
 
     def randomize(self):
@@ -72,10 +59,12 @@ class Environment(object):
         self.environment = makeMatrix(NUM_CELLS, NUM_CELLS, empty)
 
     def kill(self, x, y):
-        self.environment[x][y] = dead
+        self.live_cells.remove((x,y))
+        self.environment[x][y] = DEAD
 
     def vitalize(self, x, y):
-        self.environment[x][y] = alive
+        self.live_cells.append((x,y))
+        self.environment[x][y] = ALIVE
 
     def iterateField(self, field):
         width = len(field[0])
@@ -106,7 +95,7 @@ class Environment(object):
         return count
 
     def isAlive(self,x,y):
-        return (self.environment[x][y] == alive)
+        return (self.environment[x][y] == ALIVE)
 
     def decide(self,x,y,neighbors):
         if 2 <= neighbors <= 3:
