@@ -17,7 +17,7 @@ Resolution = namedtuple('Resolution', ['x','y'])
 RESOLUTION = Resolution(1280, 800)
 
 limit = min(RESOLUTION)
-pixel_per_cell = limit / float(NUM_CELLS)
+pixel_per_cell = limit / NUM_CELLS
 
 # 1920, 1080 # wide a 
 # 1920, 1200 # wide b
@@ -122,17 +122,25 @@ class Environment(object):
             self.decide(x, y, neighbors)
 
 def draw_grid():
+    offset_x = (RESOLUTION.x - (NUM_CELLS * pixel_per_cell)) / 2
+    offset_y = (RESOLUTION.y - (NUM_CELLS * pixel_per_cell)) / 2
     glColor4f(*Color.anthracite)
-    boundary = NUM_CELLS * pixel_per_cell
-    glRectf(0,0, boundary, boundary)
+    boundary_x = NUM_CELLS * pixel_per_cell + offset_x
+    boundary_y = NUM_CELLS * pixel_per_cell + offset_y
+    glRectf(offset_x, 0, boundary_x, boundary_y)
     glLineWidth(1)
-    glColor4f(*Color.black)
+    glColor4f(*Color.white)
     glBegin(GL_LINES);
-    for i in xrange(0, int(boundary), int(pixel_per_cell)):
-        glVertex2f(i, 0)
-        glVertex2f(i, boundary)
-        glVertex2f(0, i)
-        glVertex2f(boundary, i)
+    for i in xrange(0, int(NUM_CELLS), pixel_per_cell):
+        
+
+        print i
+        glVertex2f(i + offset_x, 0)
+        glVertex2f(i + offset_x, boundary_y)
+
+
+        # glVertex2f(offset_x,   i + offset_y)
+        # glVertex2f(boundary_x, i + offset_y)
     glEnd()
 
 def draw_cells(environment):
@@ -148,24 +156,19 @@ def draw(environment):
     draw_grid()
     draw_cells(environment)
       
-
 def drawCell(x,y,size,color):
     x = x * size
     y = y * size
     glColor4f(*color)
     glRectf(x,y, (size - 1) + x, (size - 1) + y)
-    #glVertex3f(x, y, 0.0)
-    #glVertex3f((size - 1) + x, y, 0.0)
-    #glVertex3f((size - 1) + x, (size - 1) + y, 0.0)
-    #glVertex3f(x, (size - 1) + y, 0.0)
 
 def setupGraphics():
     pygame.init()
     global font
     global surface
     font = pygame.font.Font(None, 28)
-    os.environ['SDL_VIDEO_WINDOW_POS'] = '%i,%i' % (0, 0)
-    video_flags = OPENGL | DOUBLEBUF | NOFRAME  | FULLSCREEN
+    os.environ['SDL_VIDEO_WINDOW_POS'] = '%i,%i' % (100, 100)
+    video_flags = OPENGL | DOUBLEBUF # | NOFRAME  | FULLSCREEN
     surface = pygame.display.set_mode(RESOLUTION, video_flags)
     glClearColor(*Color.black)
     resize(RESOLUTION)
