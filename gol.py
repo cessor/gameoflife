@@ -6,7 +6,6 @@ import random
 import pygame.locals as pygame_locals
 from pygame.locals import *
 
-
 from config import *
 from userinput import Events
 
@@ -113,10 +112,11 @@ class Engine(object):
         glTranslate(0.0, 0.0, 3.0)
 
     def draw_cell(self, x, y, size, color):
-        x = x * size + OFFSET_X
-        y = y * size + OFFSET_Y
+        x = (x * size) + OFFSET_X
+        y = (y * size) + OFFSET_Y
         glColor4f(*color)
-        glRectf(x,y, (size - 1) + x, (size - 1) + y)
+        # +1 / -1 values to compensate the grid
+        glRectf(x, y + 1, (size - 1) + x, size + y)
 
     def frame(self):
         pygame.display.flip()
