@@ -1,0 +1,34 @@
+# http://www.mathematische-basteleien.de/gameoflife.htm
+
+   x
+   x
+   x
+
+
+   x 
+   	xx
+  xx
+    x
+
+xx   
+x x
+   
+  x x
+   xx
+
+  x x
+   x  
+xx x xx
+   x
+ x x x
+   x
+
+xxx
+ xxx
+
+xx
+x
+   x
+  xx  
+
+

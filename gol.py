@@ -5,17 +5,10 @@ import pygame
 import random
 import pygame.locals as pygame_locals
 from pygame.locals import *
-from collections import namedtuple
 
+
+from config import *
 from userinput import Events
-
-NUM_CELLS = 100
-Resolution = namedtuple('Resolution', ['x','y'])
-RESOLUTION = Resolution(1280, 800)
-limit = min(RESOLUTION)
-pixel_per_cell = limit / NUM_CELLS
-OFFSET_X = (RESOLUTION.x - (NUM_CELLS * pixel_per_cell)) / 2
-OFFSET_Y = (RESOLUTION.y - (NUM_CELLS * pixel_per_cell)) / 2
 
 def makeMatrix(width, height, fn):
     matrix = []
@@ -24,13 +17,6 @@ def makeMatrix(width, height, fn):
         for y in range(height):
             matrix[x].append(fn(x,y))
     return matrix
-
-class Color(object):
-    red = (1.0, 0.0, 0.0, 1.0)
-    green = (0.0, 0.86, 0.0, 1.0)
-    anthracite = (0.15, 0.15, 0.13, 1.0)
-    black = (0.0, 0.0, 0.0, 1.0)
-    white = (1.0, 1.0, 1.0, 1.0)
 
 DEAD = 0
 ALIVE = 1
@@ -106,10 +92,13 @@ class Engine(object):
         pygame.init()
         os.environ['SDL_VIDEO_WINDOW_POS'] = '%i,%i' % (100, 100)
         
-        video_flags = OPENGL | DOUBLEBUF  # | NOFRAME  | FULLSCREEN
+        video_flags = OPENGL | DOUBLEBUF
+
+        if SHOW_FULLSCREEN:
+            video_flags = video_flags | FULLSCREEN
 
         pygame.display.set_mode(RESOLUTION, video_flags)
-        glClearColor(*Color.black)
+        glClearColor(*BACKGROUND_COLOR)
         self.__resize(*RESOLUTION)
 
     def __resize(self, width, height):
@@ -146,14 +135,16 @@ class Grid(object):
         self.__draw_cursor()
 
     def __draw_grid(self):
-        glColor4f(*Color.anthracite)
-        boundary_x = NUM_CELLS * pixel_per_cell + OFFSET_X
-        boundary_y = NUM_CELLS * pixel_per_cell + OFFSET_Y
+        glColor4f(*GRID_BACKDROP_COLOR)
+        boundary_x = NUM_CELLS * PIXEL_PER_CELL + OFFSET_X
+        boundary_y = NUM_CELLS * PIXEL_PER_CELL + OFFSET_Y
         glRectf(OFFSET_X, OFFSET_Y, boundary_x, boundary_y)
+        if not SHOW_GRID: return
+
         glLineWidth(1)
-        glColor4f(*Color.black)
+        glColor4f(*GRID_LINE_COLOR)
         glBegin(GL_LINES);
-        for i in xrange(pixel_per_cell, NUM_CELLS * pixel_per_cell, pixel_per_cell):
+        for i in xrange(PIXEL_PER_CELL, NUM_CELLS * PIXEL_PER_CELL, PIXEL_PER_CELL):
             glVertex2f(i + OFFSET_X, OFFSET_Y)
             glVertex2f(i + OFFSET_X, boundary_y)
             glVertex2f(OFFSET_X,   i + OFFSET_Y)
@@ -163,20 +154,20 @@ class Grid(object):
     def __draw_cells(self):
         for x,y,v in self._environment.cells():
             if self._environment.isAlive(x,y):
-                self._engine.draw_cell(x,y, pixel_per_cell, Color.green)
+                self._engine.draw_cell(x,y, PIXEL_PER_CELL, CELL_COLOR)
           
     def __draw_cursor(self):
         position = pygame.mouse.get_pos()
         x,y = self.__pixel_to_grid(position)
-        self._engine.draw_cell(x, y, pixel_per_cell, Color.red)
+        self._engine.draw_cell(x, y, PIXEL_PER_CELL, CURSOR_COLOR)
         
     def __pixel_to_grid(self, (x, y)):
         x,y = self.__snap_to_grid(x - OFFSET_X, y - OFFSET_Y)
         return x,y
 
     def __snap_to_grid(self, x, y):
-        x = int(x / pixel_per_cell)
-        y = int(y / pixel_per_cell)
+        x = int(x / PIXEL_PER_CELL)
+        y = int(y / PIXEL_PER_CELL)
         return x,y
 
     def __is_on_grid(self, x, y):
