@@ -12,9 +12,9 @@ from userinput import Events
 
 def makeMatrix(width, height, fn):
     matrix = []
-    for x in range(width):
+    for x in xrange(width):
         matrix.append([])
-        for y in range(height):
+        for y in xrange(height):
             matrix[x].append(fn(x,y))
     return matrix
 
@@ -45,8 +45,8 @@ class Environment(object):
         self.environment[x][y] = ALIVE
 
     def iterate(self, width, height, field):
-        for x in range(width):
-            for y in range(height): 
+        for x in xrange(width):
+            for y in xrange(height): 
                 yield (x,y,field[x][y])
 
     def cells(self):
@@ -91,9 +91,7 @@ class Engine(object):
     def __setup(self):
         pygame.init()
         os.environ['SDL_VIDEO_WINDOW_POS'] = '%i,%i' % (100, 100)
-        
         video_flags = OPENGL | DOUBLEBUF
-
         if SHOW_FULLSCREEN:
             video_flags = video_flags | FULLSCREEN
 
