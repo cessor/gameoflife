@@ -11,7 +11,8 @@ class Resolutions(object):
         (1280, 800),
         (1024, 640)
     ]
-    @classmethod 
+
+    @classmethod
     def parse(self, x, y):
         if (x,y) not in self.resolutions:
             resolutions = ', '.join(['%sx%s' % (a, b) for a,b in self.resolutions])
@@ -22,12 +23,12 @@ class Color(object):
     gray =        (0.15, 0.15,   0.13,   1.0)
     black =       (0.0, 0.0, 0.0, 1.0)
     white =       (1.0, 1.0, 1.0, 1.0)
-    red =         (1.0, 0.2, 0.0, 1.0)   
+    red =         (1.0, 0.2, 0.0, 1.0)
     orange =      (1.0, 0.4, 0.0, 1.0)
     yellow =      (1.0, 0.9, 0.0, 1.0)
     light_green = (0.4, 1.0, 0.0, 1.0)
     green =       (0.0, 1.0, 0.2, 1.0)
-    cyan =        (0.0, 1.0, 0.4, 1.0)   
+    cyan =        (0.0, 1.0, 0.4, 1.0)
     light_blue =  (0.0, 0.6, 1.0, 1.0)
     blue =        (0.0, 0.2, 1.0, 1.0)
     purple =      (0.4, 0.0, 1.0, 1.0)
@@ -50,7 +51,7 @@ def read_config():
     with open('config.cfg', 'r') as cfg_file:
         lines = cfg_file.readlines()
         lines = [
-            line.strip().replace(' ', '').split('=') 
+            line.strip().replace(' ', '').split('=')
             for line in lines
             if line.strip() and '=' in line
         ]

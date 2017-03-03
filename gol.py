@@ -9,24 +9,29 @@ from pygame.locals import *
 from config import *
 from userinput import Events
 
+
 def makeMatrix(width, height, fn):
     matrix = []
-    for x in xrange(width):
+    for x in range(width):
         matrix.append([])
-        for y in xrange(height):
-            matrix[x].append(fn(x,y))
+        for y in range(height):
+            matrix[x].append(fn(x, y))
     return matrix
 
 DEAD = 0
 ALIVE = 1
 
-def empty(x,y):
+
+def empty(x, y):
     return DEAD
 
-def randomCell(x,y):
+
+def randomCell(x, y):
     return random.randint(DEAD, ALIVE)
 
+
 class Environment(object):
+
     def __init__(self):
         self.live_cells = []
         self.clear()
@@ -44,14 +49,14 @@ class Environment(object):
         self.environment[x][y] = ALIVE
 
     def iterate(self, width, height, field):
-        for x in xrange(width):
-            for y in xrange(height): 
-                yield (x,y,field[x][y])
+        for x in range(width):
+            for y in range(height):
+                yield (x, y, field[x][y])
 
     def cells(self):
         return self.iterate(NUM_CELLS, NUM_CELLS, self.environment)
 
-    def getNeighborCount(self, x,y):
+    def getNeighborCount(self, x, y):
         count = 0
         xpn = (x + 1) % NUM_CELLS
         ypn = (y + 1) % NUM_CELLS
@@ -66,24 +71,26 @@ class Environment(object):
         count += self.isAlive(x - 1, ypn)
         return count
 
-    def isAlive(self,x,y):
+    def isAlive(self, x, y):
         return (self.environment[x][y] == ALIVE)
 
-    def decide(self,x,y,neighbors):
+    def decide(self, x, y, neighbors):
         if 2 <= neighbors <= 3:
             if neighbors == 3:
-                self.vitalize(x,y)
+                self.vitalize(x, y)
             else:
                 pass
-        else: 
-            self.kill(x,y)
+        else:
+            self.kill(x, y)
 
     def calculateNextGeneration(self):
         neighborhood = makeMatrix(NUM_CELLS, NUM_CELLS, self.getNeighborCount)
-        for x,y,neighbors in self.iterate(NUM_CELLS, NUM_CELLS, neighborhood):
+        for x, y, neighbors in self.iterate(NUM_CELLS, NUM_CELLS, neighborhood):
             self.decide(x, y, neighbors)
 
+
 class Engine(object):
+
     def __init__(self):
         self.__setup()
 
@@ -99,12 +106,12 @@ class Engine(object):
         self.__resize(*RESOLUTION)
 
     def __resize(self, width, height):
-        glViewport(0,0, width, height)
+        glViewport(0, 0, width, height)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         glOrtho(0.0, width, height, 0, -20, 0.0)
         glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()        
+        glLoadIdentity()
 
     def clear_screen(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -121,7 +128,9 @@ class Engine(object):
     def frame(self):
         pygame.display.flip()
 
+
 class Grid(object):
+
     def __init__(self, engine, environment):
         self._environment = environment
         self._engine = engine
@@ -137,12 +146,13 @@ class Grid(object):
         boundary_x = NUM_CELLS * PIXEL_PER_CELL + OFFSET_X
         boundary_y = NUM_CELLS * PIXEL_PER_CELL + OFFSET_Y
         glRectf(OFFSET_X, OFFSET_Y, boundary_x, boundary_y)
-        if not SHOW_GRID: return
+        if not SHOW_GRID:
+            return
 
         glLineWidth(1)
         glColor4f(*GRID_LINE_COLOR)
-        glBegin(GL_LINES);
-        for i in xrange(PIXEL_PER_CELL, NUM_CELLS * PIXEL_PER_CELL, PIXEL_PER_CELL):
+        glBegin(GL_LINES)
+        for i in range(int(PIXEL_PER_CELL), int(NUM_CELLS * PIXEL_PER_CELL), int(PIXEL_PER_CELL)):
             glVertex2f(i + OFFSET_X, OFFSET_Y)
             glVertex2f(i + OFFSET_X, boundary_y)
             glVertex2f(OFFSET_X,   i + OFFSET_Y)
@@ -150,38 +160,42 @@ class Grid(object):
         glEnd()
 
     def __draw_cells(self):
-        for x,y,v in self._environment.cells():
-            if self._environment.isAlive(x,y):
-                self._engine.draw_cell(x,y, PIXEL_PER_CELL, CELL_COLOR)
-          
+        for x, y, v in self._environment.cells():
+            if self._environment.isAlive(x, y):
+                self._engine.draw_cell(x, y, PIXEL_PER_CELL, CELL_COLOR)
+
     def __draw_cursor(self):
         position = pygame.mouse.get_pos()
-        x,y = self.__pixel_to_grid(position)
+        x, y = self.__pixel_to_grid(*position)
         self._engine.draw_cell(x, y, PIXEL_PER_CELL, CURSOR_COLOR)
-        
-    def __pixel_to_grid(self, (x, y)):
-        x,y = self.__snap_to_grid(x - OFFSET_X, y - OFFSET_Y)
-        return x,y
+
+    def __pixel_to_grid(self, x, y):
+        x, y = self.__snap_to_grid(x - OFFSET_X, y - OFFSET_Y)
+        return x, y
 
     def __snap_to_grid(self, x, y):
         x = int(x / PIXEL_PER_CELL)
         y = int(y / PIXEL_PER_CELL)
-        return x,y
+        return x, y
 
     def __is_on_grid(self, x, y):
         return 0 <= x < NUM_CELLS and 0 <= y < NUM_CELLS
 
     def vitalize_cell(self, position):
-        x,y = self.__pixel_to_grid(position)
-        if not self.__is_on_grid(x,y): return
-        self._environment.vitalize(x,y)
+        x, y = self.__pixel_to_grid(*position)
+        if not self.__is_on_grid(x, y):
+            return
+        self._environment.vitalize(x, y)
 
     def kill_cell(self, position):
-        x,y = self.__pixel_to_grid(position)
-        if not self.__is_on_grid(x,y): return
-        self._environment.kill(x,y)
+        x, y = self.__pixel_to_grid(*position)
+        if not self.__is_on_grid(x, y):
+            return
+        self._environment.kill(x, y)
+
 
 class Game(object):
+
     def __init__(self, engine, grid, environment, events=Events()):
         self._engine = engine
         self._events = events
@@ -207,7 +221,7 @@ class Game(object):
         mouse.on_right_click(self._grid.kill_cell)
 
     def run(self):
-        ## Put this here for game syncing stuff 
+        # Put this here for game syncing stuff
         # frames = 0
         # ticks = pygame.time.get_ticks()
         while self._running:
@@ -222,9 +236,10 @@ class Game(object):
 
     def pause(self):
         self._paused = (not self._paused)
-        
+
     def quit(self):
         self._running = False
+
 
 def main():
     engine = Engine()
@@ -232,5 +247,5 @@ def main():
     grid = Grid(engine, environment)
     Game(engine, grid, environment).run()
 
-if __name__ == '__main__': 
+if __name__ == '__main__':
     main()
